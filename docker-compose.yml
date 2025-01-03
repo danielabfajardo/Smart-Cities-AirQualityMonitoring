@@ -1,0 +1,62 @@
+services: 
+  influxdb:
+    restart: always
+    image: influxdb
+    container_name: influxdb
+    volumes:
+      - ./influxdb:/var/lib/influxdb2
+    env_file:
+      - .env
+    entrypoint: [ "./entrypoint.sh" ]
+    ports:
+      - "${DOCKER_INFLUXDB_INIT_PORT}:8086"
+
+  mosquitto:
+    container_name: mosquitto
+    image: eclipse-mosquitto
+    restart: always
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    ports:
+      - "1883:1883"
+
+  simulator:
+    container_name: simulator
+    restart: always
+    build:
+      context: ./sensor_simulator
+    depends_on:
+      mosquitto:
+        condition: service_started
+
+  node-red:
+    restart: always
+    container_name: node-red
+    build:
+      context: ./node-red
+    ports:
+      - "1880:1880"
+    volumes:
+      - ./node-red/data:/data
+    env_file:
+      - .env
+    depends_on:
+      - mosquitto
+      - influxdb
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+     # - ./grafana/var:/var/lib/grafana
+      - ./grafana/etc:/etc/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+    depends_on:
+      - influxdb
