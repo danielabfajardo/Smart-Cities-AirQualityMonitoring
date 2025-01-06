@@ -473,5 +473,24 @@
                 "file": "/data/node_modules/node-red-contrib-telegrambot/telegrambot/99-telegrambot.js"
             }
         }
+    },
+    "node-red-contrib-env": {
+        "name": "node-red-contrib-env",
+        "version": "1.0.2",
+        "local": true,
+        "user": true,
+        "nodes": {
+            "env": {
+                "name": "env",
+                "types": [
+                    "process-env"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-env",
+                "file": "/data/node_modules/node-red-contrib-env/nodes/env.js"
+            }
+        }
     }
 }
