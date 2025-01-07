@@ -54,6 +54,7 @@ services:
       - "3000:3000"
     volumes:
       - ./grafana/etc:/etc/grafana
+      #- ./grafana/provisioning:/etc/grafana/provisioning
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin123

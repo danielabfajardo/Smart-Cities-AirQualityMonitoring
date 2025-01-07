@@ -24,14 +24,14 @@ def simulate_temperature():
     return round(random.uniform(18.0, 35.0), 1)
 
 def simulate_humidity():
-    return round(random.uniform(30.0, 70.0), 1)
+    return max(round(random.uniform(30.0, 70.0), 1), 0)
 
-# Simulate pollutants with realistic ranges and probabilities
 def simulate_pollutant(avg, variation, probability_of_spike):
     if random.random() < probability_of_spike:
-        return round(avg + random.uniform(3 * variation, 5 * variation), 1)
+        value = avg + random.uniform(3 * variation, 5 * variation)
     else:
-        return round(random.gauss(avg, variation), 1)
+        value = random.gauss(avg, variation)
+    return max(round(value, 1), 0)  # Ensure no negative values
 
 def simulate_pm2_5(city):
     return simulate_pollutant(city["avg_pm2_5"], 5, 0.9)
@@ -46,10 +46,10 @@ def simulate_no2(city):
     return simulate_pollutant(city["avg_no2"], 3, 0.6)
 
 def simulate_power_consumption():
-    return round(random.uniform(0.5, 1.5), 2)
+    return max(round(random.uniform(0.5, 1.5), 2), 0)
 
-# Generate a random offset for latitude and longitude
-def random_offset():
+# Generate a fixed offset for latitude and longitude
+def generate_fixed_offsets():
     return round(random.uniform(-0.01, 0.01), 5)  # Small offset to vary sensor locations
 
 # MQTT Client Setup
@@ -61,16 +61,23 @@ except Exception as e:
     print(f"Failed to connect to MQTT broker: {e}")
     exit(1)
 
-# Main Loop
-sensor_count_per_city = {city["name"]: random.randint(1, 3) for city in CITIES}  # Random 1–3 sensors per city
+# Initialize sensors with fixed positions
+sensor_positions = {}
+for city in CITIES:
+    sensor_positions[city["name"]] = []
+    for sensor_num in range(1, SENSORS_PER_CITY + 1):
+        lat_offset = generate_fixed_offsets()
+        lon_offset = generate_fixed_offsets()
+        sensor_positions[city["name"]].append({
+            "sensor_id": f"{city['name']}_sensor_{sensor_num}",
+            "latitude": city["latitude"] + lat_offset,
+            "longitude": city["longitude"] + lon_offset
+        })
 
+# Main Loop
 while True:
     for city in CITIES:
-        for sensor_num in range(1, sensor_count_per_city[city["name"]] + 1):
-            # Generate unique latitude and longitude for the sensor
-            sensor_latitude = city["latitude"] + random_offset()
-            sensor_longitude = city["longitude"] + random_offset()
-
+        for sensor in sensor_positions[city["name"]]:
             # Generate sensor data
             temperature = simulate_temperature()
             humidity = simulate_humidity()
@@ -95,11 +102,11 @@ while True:
                 # Create the topic and message
                 topic = f"/smartcities/{city['name'].lower()}/{sensor_type}"
                 message = {
-                    "sensor_id": f"{city['name']}_sensor_{sensor_num}",
+                    "sensor_id": sensor["sensor_id"],
                     "city": city["name"],
                     "sensor_type": sensor_type,
-                    "latitude": sensor_latitude,
-                    "longitude": sensor_longitude,
+                    "latitude": sensor["latitude"],
+                    "longitude": sensor["longitude"],
                     "value": value,
                     "time": int(time.time() * 1000)
                 }
