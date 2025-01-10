@@ -87,6 +87,9 @@ while True:
             no2 = simulate_no2(city)
             power_consumption = simulate_power_consumption()
 
+             # Combine latitude and longitude into a location string
+            location = f"{sensor['latitude']},{sensor['longitude']}"
+
             # Publish each sensor type to a separate topic
             topics_data = {
                 "temperature": temperature,
@@ -105,8 +108,9 @@ while True:
                     "sensor_id": sensor["sensor_id"],
                     "city": city["name"],
                     "sensor_type": sensor_type,
-                    "latitude": sensor["latitude"],
-                    "longitude": sensor["longitude"],
+                    # "latitude": sensor["latitude"],
+                    # "longitude": sensor["longitude"],
+                    "location": location,  
                     "value": value,
                     "time": int(time.time() * 1000)
                 }

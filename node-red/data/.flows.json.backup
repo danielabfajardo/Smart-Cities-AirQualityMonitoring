@@ -120,7 +120,7 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 770,
+        "x": 790,
         "y": 80,
         "wires": []
     },
@@ -137,7 +137,7 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 90,
+        "x": 110,
         "y": 140,
         "wires": [
             [
@@ -150,14 +150,14 @@
         "type": "function",
         "z": "17bc7aeebae10c16",
         "name": "Data Preprocessing",
-        "func": "// AQI Breakpoints for PM2.5 and PM10\nconst AQI_BREAKPOINTS = {\n    pm2_5: [\n        { concentrationLow: 0, concentrationHigh: 12, AQILow: 0, AQIHigh: 50 },\n        { concentrationLow: 12.1, concentrationHigh: 35.4, AQILow: 51, AQIHigh: 100 },\n        { concentrationLow: 35.5, concentrationHigh: 55.4, AQILow: 101, AQIHigh: 150 },\n        { concentrationLow: 55.5, concentrationHigh: 150.4, AQILow: 151, AQIHigh: 200 },\n        { concentrationLow: 150.5, concentrationHigh: 250.4, AQILow: 201, AQIHigh: 300 },\n    ],\n    pm10: [\n        { concentrationLow: 0, concentrationHigh: 54, AQILow: 0, AQIHigh: 50 },\n        { concentrationLow: 55, concentrationHigh: 154, AQILow: 51, AQIHigh: 100 },\n        { concentrationLow: 155, concentrationHigh: 254, AQILow: 101, AQIHigh: 150 },\n        { concentrationLow: 255, concentrationHigh: 354, AQILow: 151, AQIHigh: 200 },\n        { concentrationLow: 355, concentrationHigh: 424, AQILow: 201, AQIHigh: 300 },\n    ]\n};\n\n// Function to calculate AQI\nfunction calculateAQI(sensorType, value) {\n    const breakpoints = AQI_BREAKPOINTS[sensorType];\n    if (!breakpoints) return null; // No AQI calculation for this sensor type\n\n    for (const breakpoint of breakpoints) {\n        if (value >= breakpoint.concentrationLow && value <= breakpoint.concentrationHigh) {\n            return ((breakpoint.AQIHigh - breakpoint.AQILow) / \n                    (breakpoint.concentrationHigh - breakpoint.concentrationLow)) *\n                    (value - breakpoint.concentrationLow) + breakpoint.AQILow;\n        }\n    }\n    return null; // Value is out of range\n}\n\n// Process data based on sensor type\nmsg.measurement = msg.payload.sensor_type; // Use sensor_type as measurement name\n\nlet value = parseFloat(msg.payload.value);\nlet aqi = null; // Default AQI value\n\n// Calculate AQI only for PM2.5 and PM10\nif (msg.payload.sensor_type === \"pm2_5\" || msg.payload.sensor_type === \"pm10\") {\n    aqi = calculateAQI(msg.payload.sensor_type, value);\n}\n\n// Format payload\nmsg.payload = {\n    fields: {\n        value: value, // Field\n        latitude: parseFloat(msg.payload.latitude), // Field\n        longitude: parseFloat(msg.payload.longitude), // Field\n        aqi: aqi // Field\n    },\n    tags: {\n        city: msg.payload.city, // Tag\n        sensor_id: msg.payload.sensor_id, // Tag\n        sensor_type: msg.payload.sensor_type // Tag\n    },\n    measurement: msg.payload.sensor_type,\n    timestamp: msg.payload.time,\n};\n\nreturn msg;\n",
+        "func": "// AQI Breakpoints for PM2.5 and PM10\nconst AQI_BREAKPOINTS = {\n    pm2_5: [\n        { concentrationLow: 0, concentrationHigh: 12, AQILow: 0, AQIHigh: 50 },\n        { concentrationLow: 12.1, concentrationHigh: 35.4, AQILow: 51, AQIHigh: 100 },\n        { concentrationLow: 35.5, concentrationHigh: 55.4, AQILow: 101, AQIHigh: 150 },\n        { concentrationLow: 55.5, concentrationHigh: 150.4, AQILow: 151, AQIHigh: 200 },\n        { concentrationLow: 150.5, concentrationHigh: 250.4, AQILow: 201, AQIHigh: 300 },\n    ],\n    pm10: [\n        { concentrationLow: 0, concentrationHigh: 54, AQILow: 0, AQIHigh: 50 },\n        { concentrationLow: 55, concentrationHigh: 154, AQILow: 51, AQIHigh: 100 },\n        { concentrationLow: 155, concentrationHigh: 254, AQILow: 101, AQIHigh: 150 },\n        { concentrationLow: 255, concentrationHigh: 354, AQILow: 151, AQIHigh: 200 },\n        { concentrationLow: 355, concentrationHigh: 424, AQILow: 201, AQIHigh: 300 },\n    ]\n};\n\n// Function to calculate AQI\nfunction calculateAQI(sensorType, value) {\n    const breakpoints = AQI_BREAKPOINTS[sensorType];\n    if (!breakpoints) return null; // No AQI calculation for this sensor type\n\n    for (const breakpoint of breakpoints) {\n        if (value >= breakpoint.concentrationLow && value <= breakpoint.concentrationHigh) {\n            return ((breakpoint.AQIHigh - breakpoint.AQILow) / \n                    (breakpoint.concentrationHigh - breakpoint.concentrationLow)) *\n                    (value - breakpoint.concentrationLow) + breakpoint.AQILow;\n        }\n    }\n    return null; // Value is out of range\n}\n\n// Process data based on sensor type\nmsg.measurement = msg.payload.sensor_type; // Use sensor_type as measurement name\n\nlet value = parseFloat(msg.payload.value);\nlet aqi = null; // Default AQI value\n\n// Calculate AQI only for PM2.5 and PM10\nif (msg.payload.sensor_type === \"pm2_5\" || msg.payload.sensor_type === \"pm10\") {\n    aqi = calculateAQI(msg.payload.sensor_type, value);\n}\n\n// Format payload\n// msg.payload = {\n//     fields: {\n//         value: value, // Field\n//         latitude: parseFloat(msg.payload.latitude), // Field\n//         longitude: parseFloat(msg.payload.longitude), // Field\n//         aqi: aqi // Field\n//     },\n//     tags: {\n//         city: msg.payload.city, // Tag\n//         sensor_id: msg.payload.sensor_id, // Tag\n//         sensor_type: msg.payload.sensor_type // Tag\n//     },\n//     measurement: \"sensor_data\",\n//     timestamp: msg.payload.time,\n// };\n\nmsg.payload = {\n    fields: {\n        latitude: parseFloat(msg.payload.latitude),  \n        longitude: parseFloat(msg.payload.longitude),\n        value: value \n    },\n    tags: {\n        sensor_id: msg.payload.sensor_id,\n        city: msg.payload.city,\n        sensor_type: msg.payload.sensor_type,\n    },\n    measurement: \"sensor_data\",\n    time: msg.payload.time\n}\n\nreturn msg;\n",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 290,
+        "x": 310,
         "y": 140,
         "wires": [
             [
@@ -173,7 +173,7 @@
         "bot": "37409ed0ed704cfc",
         "haserroroutput": false,
         "outputs": 1,
-        "x": 780,
+        "x": 800,
         "y": 240,
         "wires": [
             []
@@ -184,14 +184,14 @@
         "type": "function",
         "z": "17bc7aeebae10c16",
         "name": "Threshold evaluation",
-        "func": "const thresholds = global.get(\"thresholds\", \"file\") || {\n    pm2_5: 50,\n    pm10: 50,\n    co2: 1000,\n    no2: 50,\n    temperature: 35,\n    humidity: 70,\n    power_consumption: 1.0\n};\n\nlet payload = msg.payload; \nlet alertsByCity = {};\nlet alertSummary = {};\n\n// Process each sensor entry\npayload.forEach(sensorData => {\n    const { measurement, fields, tags, timestamp } = sensorData;\n\n    if (fields.value > thresholds[measurement]) {\n        const city = tags.city;\n        const severity = (fields.value > thresholds[measurement] * 1.25) ? \"Critical\" : \"Warning\";\n\n        if (!alertsByCity[city]) {\n            alertsByCity[city] = [];\n            alertSummary[city] = { Critical: 0, Warning: 0 };\n        }\n\n        alertsByCity[city].push({\n            sensor: tags.sensor_id,\n            condition: `${measurement} exceeds threshold: ${fields.value} (Threshold: ${thresholds[measurement]})`,\n            location: `(${fields.latitude}, ${fields.longitude})`,\n            severity,\n            timestamp\n        });\n\n        alertSummary[city][severity]++;\n    }\n});\n\n// Build consolidated alert message\nif (Object.keys(alertsByCity).length > 0) {\n    let alertMessage = `🚨 Air Quality Alert Summary 🚨\\n\\n`;\n\n    for (const city in alertSummary) {\n        alertMessage += `🍀 Domain: Smart Cities\\n`;\n        alertMessage += `  - Critical: ${alertSummary[city].Critical}\\n`;\n        alertMessage += `  - Warnings: ${alertSummary[city].Warning}\\n\\n`;\n    }\n\n    alertMessage += `Detailed Alerts:\\n`;\n\n    for (const city in alertsByCity) {\n        alertsByCity[city].forEach(alert => {\n            alertMessage += `📍 City: ${city}\\n`;\n            alertMessage += `  - Sensor: ${alert.sensor}\\n`;\n            alertMessage += `  - Condition: ${alert.condition}\\n`;\n            alertMessage += `  - Severity: ${alert.severity}\\n`;\n            alertMessage += `  - Location: ${alert.location}\\n`;\n            alertMessage += `\\n`;\n        });\n    }\n\n    msg.payload = {\n        chatId: parseInt(env.get(\"NODE_RED_TELEGRAM_MONITORING_CHAT_ID\"), 10) || \"-4603413735\",\n        type: \"message\",\n        content: alertMessage.trim()\n    };\n\n    return msg;\n} else {\n    return null; // No alerts to send\n}",
+        "func": "const thresholds = global.get(\"thresholds\", \"file\") || {\n    pm2_5: 50,\n    pm10: 70,\n    co2: 1000,\n    no2: 50,\n    temperature: 35,\n    humidity: 70,\n    power_consumption: 1.5\n};\n\nlet payload = msg.payload; \nlet alertsByCity = {};\nlet alertSummary = {};\n\n// Process each sensor entry\npayload.forEach(sensorData => {\n    const { measurement, fields, tags, timestamp } = sensorData;\n\n    if (fields.value > thresholds[measurement]) {\n        const city = tags.city;\n        const severity = (fields.value > thresholds[measurement] * 1.25) ? \"Critical\" : \"Warning\";\n\n        if (!alertsByCity[city]) {\n            alertsByCity[city] = [];\n            alertSummary[city] = { Critical: 0, Warning: 0 };\n        }\n\n        alertsByCity[city].push({\n            sensor: tags.sensor_id,\n            condition: `${measurement} exceeds threshold: ${fields.value} (Threshold: ${thresholds[measurement]})`,\n            location: `(${fields.latitude}, ${fields.longitude})`,\n            severity,\n            timestamp\n        });\n\n        alertSummary[city][severity]++;\n    }\n});\n\n// Build consolidated alert message\nif (Object.keys(alertsByCity).length > 0) {\n    let alertMessage = `🚨 Air Quality Alert Summary 🚨\\n\\n`;\n\n    for (const city in alertSummary) {\n        alertMessage += `🍀 Domain: Smart Cities\\n`;\n        alertMessage += `  - Critical: ${alertSummary[city].Critical}\\n`;\n        alertMessage += `  - Warnings: ${alertSummary[city].Warning}\\n\\n`;\n    }\n\n    alertMessage += `Detailed Alerts:\\n`;\n\n    for (const city in alertsByCity) {\n        alertsByCity[city].forEach(alert => {\n            alertMessage += `📍 City: ${city}\\n`;\n            alertMessage += `  - Sensor: ${alert.sensor}\\n`;\n            alertMessage += `  - Condition: ${alert.condition}\\n`;\n            alertMessage += `  - Severity: ${alert.severity}\\n`;\n            alertMessage += `  - Location: ${alert.location}\\n`;\n            alertMessage += `\\n`;\n        });\n    }\n\n    msg.payload = {\n        chatId: parseInt(env.get(\"NODE_RED_TELEGRAM_MONITORING_CHAT_ID\"), 10) || \"-4603413735\",\n        type: \"message\",\n        content: alertMessage.trim()\n    };\n\n    return msg;\n} else {\n    return null; // No alerts to send\n}",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 520,
+        "x": 540,
         "y": 240,
         "wires": [
             [
@@ -207,7 +207,7 @@
         "bot": "4439cfb539ede99d",
         "saveDataDir": "",
         "filterCommands": false,
-        "x": 150,
+        "x": 170,
         "y": 380,
         "wires": [
             [
@@ -221,14 +221,14 @@
         "type": "function",
         "z": "17bc7aeebae10c16",
         "name": "Threshold configuration",
-        "func": "let thresholds = global.get(\"thresholds\") || {\n    pm2_5: 50,          // µg/m³\n    pm10: 50,           // µg/m³\n    co2: 1000,          // ppm\n    no2: 50,            // µg/m³\n    temperature: 35,    // °C\n    humidity: 70,       // %\n    power_consumption: 1.0 // kW\n};\n\nconst message = msg.payload.content;\nconst chatId = msg.payload.chatId;\n\n// Helper function to get units for each metric\nfunction getUnit(metric) {\n    const units = {\n        pm2_5: \"µg/m³\",\n        pm10: \"µg/m³\",\n        co2: \"ppm\",\n        no2: \"µg/m³\",\n        temperature: \"°C\",\n        humidity: \"%\",\n        power_consumption: \"kW\"\n    };\n    return units[metric] || \"\";\n}\n\n// Prepare the available commands message\nconst availableCommands = `\nℹ️ *Available Commands:*\n1️⃣ /get_thresholds - View current thresholds.\n2️⃣ /set_threshold <metric> <value> - Update a threshold (e.g., /set_threshold pm2_5 45).\n`;\n\n// Handle /get_thresholds command\nif (message === \"/get_thresholds\") {\n    msg.payload = {\n        chatId: chatId,\n        type: \"message\",\n        content: `📊 *Current Thresholds:*\\n\\n${Object.entries(thresholds)\n            .map(([key, value]) => `*${key}:* ${value} ${getUnit(key)}`)\n            .join(\"\\n\")}`\n    };\n    return msg;\n}\n\n// Handle /set_threshold command\nif (message.startsWith(\"/set_threshold\")) {\n    const parts = message.split(\" \");\n    if (parts.length === 3) {\n        const metric = parts[1];\n        const value = parseFloat(parts[2]);\n\n        if (thresholds.hasOwnProperty(metric)) {\n            thresholds[metric] = value; // Update the threshold\n            global.set(\"thresholds\", thresholds); // Persist the updated thresholds\n            node.warn(\"Updated thresholds: \" + JSON.stringify(thresholds)); // Debug log\n\n            msg.payload = {\n                chatId: chatId,\n                type: \"message\",\n                content: `✅ Threshold for ${metric.toUpperCase()} set to ${value} ${getUnit(metric)}`\n            };\n            return msg;\n        } else {\n            msg.payload = {\n                chatId: chatId,\n                type: \"message\",\n                content: `❌ Invalid metric. Available metrics: ${Object.keys(thresholds).join(\", \")}`\n            };\n            return msg;\n        }\n    } else {\n        msg.payload = {\n            chatId: chatId,\n            type: \"message\",\n            content: `❌ Invalid command format. Use: /set_threshold <metric> <value>\\n\\n${availableCommands}`\n        };\n        return msg;\n    }\n}\n\n// Fallback message for unrelated or unrecognized commands\nmsg.payload = {\n    chatId: chatId,\n    type: \"message\",\n    content: `❓ Unrecognized command or message. Please use one of the following commands:\\n${availableCommands}`\n};\n\nreturn msg;",
+        "func": "let thresholds = global.get(\"thresholds\") || {\n    pm2_5: 50,          // µg/m³\n    pm10: 70,           // µg/m³\n    co2: 1000,          // ppm\n    no2: 50,            // µg/m³\n    temperature: 35,    // °C\n    humidity: 70,       // %\n    power_consumption: 1.5 // kW\n};\n\nconst message = msg.payload.content;\nconst chatId = msg.payload.chatId;\n\n// Helper function to get units for each metric\nfunction getUnit(metric) {\n    const units = {\n        pm2_5: \"µg/m³\",\n        pm10: \"µg/m³\",\n        co2: \"ppm\",\n        no2: \"µg/m³\",\n        temperature: \"°C\",\n        humidity: \"%\",\n        power_consumption: \"kW\"\n    };\n    return units[metric] || \"\";\n}\n\n// Prepare the available commands message\nconst availableCommands = `\nℹ️ *Available Commands:*\n1️⃣ /get_thresholds - View current thresholds.\n2️⃣ /set_threshold <metric> <value> - Update a threshold (e.g., /set_threshold pm2_5 45).\n`;\n\n// Handle /get_thresholds command\nif (message === \"/get_thresholds\") {\n    msg.payload = {\n        chatId: chatId,\n        type: \"message\",\n        content: `📊 *Current Thresholds:*\\n\\n${Object.entries(thresholds)\n            .map(([key, value]) => `*${key}:* ${value} ${getUnit(key)}`)\n            .join(\"\\n\")}`\n    };\n    return msg;\n}\n\n// Handle /set_threshold command\nif (message.startsWith(\"/set_threshold\")) {\n    const parts = message.split(\" \");\n    if (parts.length === 3) {\n        const metric = parts[1];\n        const value = parseFloat(parts[2]);\n\n        if (thresholds.hasOwnProperty(metric)) {\n            thresholds[metric] = value; // Update the threshold\n            global.set(\"thresholds\", thresholds); // Persist the updated thresholds\n            node.warn(\"Updated thresholds: \" + JSON.stringify(thresholds)); // Debug log\n\n            msg.payload = {\n                chatId: chatId,\n                type: \"message\",\n                content: `✅ Threshold for ${metric.toUpperCase()} set to ${value} ${getUnit(metric)}`\n            };\n            return msg;\n        } else {\n            msg.payload = {\n                chatId: chatId,\n                type: \"message\",\n                content: `❌ Invalid metric. Available metrics: ${Object.keys(thresholds).join(\", \")}`\n            };\n            return msg;\n        }\n    } else {\n        msg.payload = {\n            chatId: chatId,\n            type: \"message\",\n            content: `❌ Invalid command format. Use: /set_threshold <metric> <value>\\n\\n${availableCommands}`\n        };\n        return msg;\n    }\n}\n\n// Fallback message for unrelated or unrecognized commands\nmsg.payload = {\n    chatId: chatId,\n    type: \"message\",\n    content: `❓ Unrecognized command or message. Please use one of the following commands:\\n${availableCommands}`\n};\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 450,
+        "x": 470,
         "y": 380,
         "wires": [
             [
@@ -249,8 +249,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 460,
-        "y": 460,
+        "x": 480,
+        "y": 440,
         "wires": []
     },
     {
@@ -261,7 +261,7 @@
         "bot": "4439cfb539ede99d",
         "haserroroutput": false,
         "outputs": 1,
-        "x": 740,
+        "x": 760,
         "y": 380,
         "wires": [
             []
@@ -288,7 +288,7 @@
         "reduceInit": "",
         "reduceInitType": "",
         "reduceFixup": "",
-        "x": 520,
+        "x": 540,
         "y": 140,
         "wires": [
             [
@@ -310,7 +310,7 @@
         "retentionPolicyV18Flux": "",
         "org": "my_org",
         "bucket": "air_quality",
-        "x": 790,
+        "x": 810,
         "y": 140,
         "wires": []
     }
