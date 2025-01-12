@@ -32,6 +32,8 @@
             "mode": "thresholds"
           },
           "mappings": [],
+          "max": 400,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -40,8 +42,24 @@
                 "value": null
               },
               {
+                "color": "yellow",
+                "value": 51
+              },
+              {
+                "color": "#EF843C",
+                "value": 101
+              },
+              {
                 "color": "red",
-                "value": 80
+                "value": 151
+              },
+              {
+                "color": "dark-purple",
+                "value": 201
+              },
+              {
+                "color": "#390560",
+                "value": 301
               }
             ]
           }
@@ -61,7 +79,7 @@
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
-            "lastNotNull"
+            "mean"
           ],
           "fields": "",
           "values": false
@@ -77,11 +95,11 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"air_quality\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"sensor_data\") \n  |> filter(fn: (r) => r[\"sensor_type\"] == \"pm10\" or r[\"sensor_type\"] == \"pm2_5\") \n  |> filter(fn: (r) => r[\"_field\"] == \"aqi\") \n  |> group(columns: [\"city\"]) \n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false) \n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"air_quality\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  \n  |> filter(fn: (r) => r[\"_measurement\"] == \"sensor_data\")\n  |> filter(fn: (r) => r[\"_field\"] == \"aqi\")  \n  |> group(columns: [\"city\", \"sensor_type\"])  \n  |> mean()  \n  |> group(columns: [\"city\"])  \n  |> max()  \n  |> keep(columns: [\"_value\", \"city\"])  \n  |> rename(columns: {_value: \"\"})",
           "refId": "A"
         }
       ],
-      "title": "Average Air Quality Index (AQI)",
+      "title": "Air Quality Index (AQI)",
       "type": "gauge"
     },
     {
@@ -92,7 +110,8 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
+            "fixedColor": "yellow",
+            "mode": "palette-classic"
           },
           "custom": {
             "hideFrom": {
@@ -101,109 +120,93 @@
               "viz": false
             }
           },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
+          "mappings": []
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "city Moderate"
+            },
+            "properties": [
               {
-                "color": "green",
-                "value": null
-              },
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "city Unhealthy"
+            },
+            "properties": [
               {
-                "color": "red",
-                "value": 80
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "city Unhealthy for Sensitive Groups"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "orange",
+                  "mode": "fixed"
+                }
               }
             ]
           }
-        },
-        "overrides": []
+        ]
       },
       "gridPos": {
-        "h": 9,
+        "h": 8,
         "w": 10,
         "x": 0,
         "y": 7
       },
-      "id": 2,
+      "id": 7,
       "options": {
-        "basemap": {
-          "config": {},
-          "name": "Layer 0",
-          "type": "default"
+        "displayLabels": [],
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true,
+          "values": []
         },
-        "controls": {
-          "mouseWheelZoom": true,
-          "showAttribution": true,
-          "showDebug": false,
-          "showMeasure": false,
-          "showScale": false,
-          "showZoom": true
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
         },
-        "layers": [
-          {
-            "config": {
-              "showLegend": true,
-              "style": {
-                "color": {
-                  "fixed": "dark-green"
-                },
-                "opacity": 0.4,
-                "rotation": {
-                  "fixed": 0,
-                  "max": 360,
-                  "min": -360,
-                  "mode": "mod"
-                },
-                "size": {
-                  "fixed": 5,
-                  "max": 15,
-                  "min": 2
-                },
-                "symbol": {
-                  "fixed": "img/icons/marker/circle.svg",
-                  "mode": "fixed"
-                },
-                "symbolAlign": {
-                  "horizontal": "center",
-                  "vertical": "center"
-                },
-                "textConfig": {
-                  "fontSize": 12,
-                  "offsetX": 0,
-                  "offsetY": 0,
-                  "textAlign": "center",
-                  "textBaseline": "middle"
-                }
-              }
-            },
-            "location": {
-              "mode": "auto"
-            },
-            "name": "Sensor",
-            "tooltip": true,
-            "type": "markers"
-          }
-        ],
         "tooltip": {
-          "mode": "details"
-        },
-        "view": {
-          "allLayers": true,
-          "id": "zero",
-          "lat": 0,
-          "lon": 0,
-          "zoom": 1
+          "mode": "single",
+          "sort": "none"
         }
       },
       "pluginVersion": "11.4.0",
       "targets": [
         {
-          "query": "from(bucket: \"air_quality\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r[\"_field\"] == \"latitude\" or r[\"_field\"] == \"longitude\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> group()\n  |> keep(columns: [\"city\", \"latitude\", \"longitude\", \"sensor_id\"])\n  |> unique(column: \"sensor_id\")\n  |> yield(name: \"sensors\")",
+          "query": "from(bucket: \"air_quality\")\n  |> range(start: -30d) \n  |> filter(fn: (r) => r[\"_measurement\"] == \"sensor_data\")\n  |> filter(fn: (r) => r[\"_field\"] == \"aqi\")  \n  |> group(columns: [\"city\", \"sensor_type\"])  \n  |> mean() \n  |> group(columns: [\"city\"]) \n  |> max() \n  |> map(fn: (r) => ({\n      city: r.city,\n      category: if r._value <= 50 then \"Good\"\n                else if r._value <= 100 then \"Moderate\"\n                else if r._value <= 150 then \"Unhealthy for Sensitive Groups\"\n                else if r._value <= 200 then \"Unhealthy\"\n                else if r._value <= 300 then \"Very Unhealthy\"\n                else \"Hazardous\",\n      _value: r._value\n  }))  \n  |> group(columns: [\"category\"]) \n  |> count(column: \"city\")  ",
           "refId": "A"
         }
       ],
-      "title": "Sensor Geolocation",
-      "type": "geomap"
+      "title": "Distribution of AQI Levels Across Cities",
+      "type": "piechart"
     },
     {
       "datasource": {
@@ -266,7 +269,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
+        "h": 10,
         "w": 14,
         "x": 10,
         "y": 7
@@ -287,7 +290,7 @@
       "pluginVersion": "11.4.0",
       "targets": [
         {
-          "query": "from(bucket: \"air_quality\")\n  |> range(start: -7d) \n  |> filter(fn: (r) => r[\"_measurement\"] == \"sensor_data\") \n  |> filter(fn: (r) => r[\"sensor_type\"] == \"pm2_5\" or r[\"sensor_type\"] == \"pm10\") \n  |> filter(fn: (r) => r[\"_field\"] == \"aqi\") \n  |> group(columns: [\"city\", \"sensor_type\"]) // Group by city and sensor type\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false) \n  |> yield(name: \"mean_aqi\")",
+          "query": "from(bucket: \"air_quality\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  \n  |> filter(fn: (r) => r[\"_measurement\"] == \"sensor_data\")\n  |> filter(fn: (r) => r[\"_field\"] == \"aqi\")\n  |> group(columns: [\"city\", \"sensor_type\"])  \n  |> group(columns: [\"city\"])  \n  |> keep(columns: [\"_time\", \"_value\", \"city\"])  ",
           "refId": "A"
         }
       ],
@@ -316,10 +319,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 7,
+        "h": 9,
+        "w": 10,
         "x": 0,
-        "y": 16
+        "y": 15
       },
       "id": 4,
       "options": {
@@ -344,7 +347,7 @@
       "pluginVersion": "11.4.0",
       "targets": [
         {
-          "query": "from(bucket: \"air_quality\")\n  |> range(start: -1h) \n  |> filter(fn: (r) => r[\"_measurement\"] == \"sensor_data\") \n  |> group(columns: [\"city\", \"sensor_id\"]) \n  |> distinct(column: \"sensor_id\") \n  |> group(columns: [\"city\"]) \n  |> count(column: \"sensor_id\") \n  |> yield(name: \"sensor_health_per_city\")",
+          "query": "from(bucket: \"air_quality\")\n  |> range(start: -1h) \n  |> filter(fn: (r) => r[\"_measurement\"] == \"sensor_data\") \n  |> group(columns: [\"city\", \"sensor_id\"]) \n  |> distinct(column: \"sensor_id\") \n  |> group(columns: [\"city\"]) \n  |> count(column: \"sensor_id\") \n  |> yield(name: \"sensor_health_per_city\")\n",
           "refId": "A"
         }
       ],
@@ -362,16 +365,117 @@
             "mode": "thresholds"
           },
           "mappings": [],
+          "max": 58,
+          "min": -40,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "red",
                 "value": null
               },
               {
                 "color": "red",
-                "value": 80
+                "value": -30
+              },
+              {
+                "color": "orange",
+                "value": -20
+              },
+              {
+                "color": "yellow",
+                "value": -10
+              },
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 30
+              },
+              {
+                "color": "orange",
+                "value": 40
+              },
+              {
+                "color": "red",
+                "value": 50
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 14,
+        "x": 10,
+        "y": 17
+      },
+      "id": 8,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "query": "from(bucket: \"air_quality\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  \n  |> filter(fn: (r) => r[\"_measurement\"] == \"sensor_data\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\" and r[\"sensor_type\"] == \"temperature\")\n  |> group(columns: [\"city\"])\n  |> mean()\n  |> keep(columns: [\"_value\", \"city\"])\n  |> rename(columns: {_value: \"\"})",
+          "refId": "A"
+        }
+      ],
+      "title": "Average Temperature across Cities",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "P951FEA4DE68E13C5"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 21
+              },
+              {
+                "color": "green",
+                "value": 31
+              },
+              {
+                "color": "yellow",
+                "value": 61
+              },
+              {
+                "color": "orange",
+                "value": 81
               }
             ]
           }
@@ -380,9 +484,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 17,
-        "x": 7,
-        "y": 16
+        "w": 12,
+        "x": 0,
+        "y": 24
       },
       "id": 5,
       "options": {
@@ -412,11 +516,11 @@
       "pluginVersion": "11.4.0",
       "targets": [
         {
-          "query": "from(bucket: \"air_quality\")\n  |> range(start: -1h) \n  |> filter(fn: (r) => r[\"_measurement\"] == \"sensor_data\") \n  |> filter(fn: (r) => r[\"sensor_type\"] == \"pm2_5\" or r[\"sensor_type\"] == \"pm10\") \n  |> aggregateWindow(every: 10m, fn: mean, createEmpty: false) \n  |> group(columns: [\"city\", \"sensor_type\"]) \n  |> yield(name: \"pollution_trends\")",
+          "query": "from(bucket: \"air_quality\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  \n  |> filter(fn: (r) => r[\"_measurement\"] == \"sensor_data\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\" and r[\"sensor_type\"] == \"humidity\")\n  |> group(columns: [\"city\"])\n  |> mean()\n  |> keep(columns: [\"_value\", \"city\"])\n  |> rename(columns: {_value: \"\"})",
           "refId": "A"
         }
       ],
-      "title": "Trends in Air Pollutants Across Cities",
+      "title": "Average Humidity across Cities",
       "type": "bargauge"
     },
     {
@@ -427,40 +531,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+            "mode": "thresholds"
           },
           "mappings": [],
           "thresholds": {
@@ -471,8 +542,12 @@
                 "value": null
               },
               {
+                "color": "orange",
+                "value": 13
+              },
+              {
                 "color": "red",
-                "value": 80
+                "value": 36
               }
             ]
           }
@@ -481,32 +556,192 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 24,
-        "x": 0,
+        "w": 12,
+        "x": 12,
         "y": 24
       },
-      "id": 6,
+      "id": 9,
       "options": {
+        "displayMode": "gradient",
         "legend": {
           "calcs": [],
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": false
         },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
       },
       "pluginVersion": "11.4.0",
       "targets": [
         {
-          "query": "from(bucket: \"air_quality\")\n  |> range(start: -1h) \n  |> filter(fn: (r) => r[\"_measurement\"] == \"sensor_data\") \n  |> filter(fn: (r) => r[\"sensor_type\"] == \"temperature\" or r[\"sensor_type\"] == \"humidity\") \n  |> aggregateWindow(every: 10m, fn: mean, createEmpty: false) \n  |> group(columns: [\"sensor_type\", \"city\"]) \n  |> keep(columns: [\"_time\", \"_value\", \"city\", \"sensor_type\"]) \n  |> yield(name: \"weather_trends\")",
+          "query": "from(bucket: \"air_quality\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  \n  |> filter(fn: (r) => r[\"_measurement\"] == \"sensor_data\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\" and r[\"sensor_type\"] == \"pm2_5\")\n  |> group(columns: [\"city\"])\n  |> mean()\n  |> keep(columns: [\"_value\", \"city\"])\n  |> rename(columns: {_value: \"\"})",
           "refId": "A"
         }
       ],
-      "title": "Weather Trends Overview",
-      "type": "timeseries"
+      "title": "Average PM2.5 across Cities",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "P951FEA4DE68E13C5"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 51
+              },
+              {
+                "color": "red",
+                "value": 101
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "id": 10,
+      "options": {
+        "displayMode": "gradient",
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "query": "from(bucket: \"air_quality\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  \n  |> filter(fn: (r) => r[\"_measurement\"] == \"sensor_data\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\" and r[\"sensor_type\"] == \"pm10\")\n  |> group(columns: [\"city\"])\n  |> mean()\n  |> keep(columns: [\"_value\", \"city\"])\n  |> rename(columns: {_value: \"\"})",
+          "refId": "A"
+        }
+      ],
+      "title": "Average PM10 across Cities",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "P951FEA4DE68E13C5"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "yellow",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 401
+              },
+              {
+                "color": "yellow",
+                "value": 1001
+              },
+              {
+                "color": "red",
+                "value": 2001
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "id": 11,
+      "options": {
+        "displayMode": "gradient",
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "query": "from(bucket: \"air_quality\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  \n  |> filter(fn: (r) => r[\"_measurement\"] == \"sensor_data\")\n  |> filter(fn: (r) => r[\"_field\"] == \"value\" and r[\"sensor_type\"] == \"co2\")\n  |> group(columns: [\"city\"])\n  |> mean()\n  |> keep(columns: [\"_value\", \"city\"])\n  |> rename(columns: {_value: \"\"})",
+          "refId": "A"
+        }
+      ],
+      "title": "Average CO2 across Cities",
+      "type": "bargauge"
     }
   ],
   "preload": false,
@@ -516,7 +751,7 @@
     "list": []
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-30m",
     "to": "now"
   },
   "timepicker": {},

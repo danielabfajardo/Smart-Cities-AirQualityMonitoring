@@ -121,7 +121,7 @@
         "statusVal": "",
         "statusType": "auto",
         "x": 790,
-        "y": 80,
+        "y": 100,
         "wires": []
     },
     {
@@ -138,7 +138,7 @@
         "rh": 0,
         "inputs": 0,
         "x": 110,
-        "y": 140,
+        "y": 160,
         "wires": [
             [
                 "49c93715f58ab854"
@@ -150,7 +150,7 @@
         "type": "function",
         "z": "17bc7aeebae10c16",
         "name": "Data Preprocessing",
-        "func": "// AQI Breakpoints for PM2.5 and PM10\nconst AQI_BREAKPOINTS = {\n    pm2_5: [\n        { concentrationLow: 0, concentrationHigh: 12, AQILow: 0, AQIHigh: 50 },\n        { concentrationLow: 12.1, concentrationHigh: 35.4, AQILow: 51, AQIHigh: 100 },\n        { concentrationLow: 35.5, concentrationHigh: 55.4, AQILow: 101, AQIHigh: 150 },\n        { concentrationLow: 55.5, concentrationHigh: 150.4, AQILow: 151, AQIHigh: 200 },\n        { concentrationLow: 150.5, concentrationHigh: 250.4, AQILow: 201, AQIHigh: 300 },\n    ],\n    pm10: [\n        { concentrationLow: 0, concentrationHigh: 54, AQILow: 0, AQIHigh: 50 },\n        { concentrationLow: 55, concentrationHigh: 154, AQILow: 51, AQIHigh: 100 },\n        { concentrationLow: 155, concentrationHigh: 254, AQILow: 101, AQIHigh: 150 },\n        { concentrationLow: 255, concentrationHigh: 354, AQILow: 151, AQIHigh: 200 },\n        { concentrationLow: 355, concentrationHigh: 424, AQILow: 201, AQIHigh: 300 },\n    ]\n};\n\n// Function to calculate AQI\nfunction calculateAQI(sensorType, value) {\n    const breakpoints = AQI_BREAKPOINTS[sensorType];\n    if (!breakpoints) return null; // No AQI calculation for this sensor type\n\n    for (const breakpoint of breakpoints) {\n        if (value >= breakpoint.concentrationLow && value <= breakpoint.concentrationHigh) {\n            return ((breakpoint.AQIHigh - breakpoint.AQILow) / \n                    (breakpoint.concentrationHigh - breakpoint.concentrationLow)) *\n                    (value - breakpoint.concentrationLow) + breakpoint.AQILow;\n        }\n    }\n    return null; // Value is out of range\n}\n\n// Process data based on sensor type\nmsg.measurement = msg.payload.sensor_type; // Use sensor_type as measurement name\n\nlet value = parseFloat(msg.payload.value);\nlet aqi = null; // Default AQI value\n\n// Calculate AQI only for PM2.5 and PM10\nif (msg.payload.sensor_type === \"pm2_5\" || msg.payload.sensor_type === \"pm10\") {\n    aqi = calculateAQI(msg.payload.sensor_type, value);\n}\n\n// Format payload\n// msg.payload = {\n//     fields: {\n//         value: value, // Field\n//         latitude: parseFloat(msg.payload.latitude), // Field\n//         longitude: parseFloat(msg.payload.longitude), // Field\n//         aqi: aqi // Field\n//     },\n//     tags: {\n//         city: msg.payload.city, // Tag\n//         sensor_id: msg.payload.sensor_id, // Tag\n//         sensor_type: msg.payload.sensor_type // Tag\n//     },\n//     measurement: \"sensor_data\",\n//     timestamp: msg.payload.time,\n// };\n\nmsg.payload = {\n    fields: {\n        value: value \n    },\n    tags: {\n        sensor_id: msg.payload.sensor_id,\n        city: msg.payload.city,\n        sensor_type: msg.payload.sensor_type,\n        location: `${msg.payload.latitude},${msg.payload.longitude}`\n    },\n    measurement: \"sensor_data\",\n    time: msg.payload.time\n}\n\nreturn msg;\n",
+        "func": "// AQI Breakpoints Table\nconst AQI_BREAKPOINTS = {\n    pm2_5: [\n        { concentration: [0, 12], aqi: [0, 50] },\n        { concentration: [12.1, 35.4], aqi: [51, 100] },\n        { concentration: [35.5, 55.4], aqi: [101, 150] },\n        { concentration: [55.5, 150.4], aqi: [151, 200] },\n        { concentration: [150.5, 250.4], aqi: [201, 300] },\n        { concentration: [250.5, 350.4], aqi: [301, 400] },\n        { concentration: [350.5, 500.4], aqi: [401, 500] },\n    ],\n    pm10: [\n        { concentration: [0, 54], aqi: [0, 50] },\n        { concentration: [55, 154], aqi: [51, 100] },\n        { concentration: [155, 254], aqi: [101, 150] },\n        { concentration: [255, 354], aqi: [151, 200] },\n        { concentration: [355, 424], aqi: [201, 300] },\n        { concentration: [425, 504], aqi: [301, 400] },\n        { concentration: [505, 604], aqi: [401, 500] },\n    ]\n};\n\nfunction calculateAQI(pollutant, concentration) {\n    const breakpoints = AQI_BREAKPOINTS[pollutant];\n    if (!breakpoints) return null; // No breakpoints defined for this pollutant\n\n    for (let i = 0; i < breakpoints.length; i++) {\n        const { concentration: range, aqi } = breakpoints[i];\n        if (concentration >= range[0] && concentration <= range[1]) {\n            return Math.round(\n                ((aqi[1] - aqi[0]) / (range[1] - range[0])) * (concentration - range[0]) + aqi[0]\n            );\n        }\n    }\n    return null; // Return null if no match (e.g., out of range)\n}\n\n// Extract pollutant data from msg.payload\nconst sensorType = msg.payload.sensor_type;\nconst value = msg.payload.value;\n\nlet pm10AQI = null;\nlet pm2_5AQI = null;\n\n// Calculate AQI only for pollutants (e.g., PM2.5, PM10)\nif ([\"pm2_5\"].includes(sensorType)) {\n    pm2_5AQI = calculateAQI(\"pm2_5\", value);\n} else if ([\"pm10\"].includes(sensorType)) {\n    pm10AQI = calculateAQI(\"pm10\", value);\n}\n\n// Final AQI is the maximum of the two\nlet finalAQI = Math.max(pm10AQI, pm2_5AQI);\n\n// Add AQI and other data to msg.payload\nmsg.payload = {\n    fields: {\n        value: value,\n        aqi: finalAQI, // Calculated AQI (null if not applicable)\n    },\n    tags: {\n        sensor_id: msg.payload.sensor_id, // Sensor ID\n        city: msg.payload.city,           // City name\n        sensor_type: msg.payload.sensor_type, // Type of metric\n    },\n    measurement: \"sensor_data\", // Measurement name in InfluxDB\n    timestamp: msg.payload.time, // Timestamp for the data point\n};\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -158,7 +158,7 @@
         "finalize": "",
         "libs": [],
         "x": 310,
-        "y": 140,
+        "y": 160,
         "wires": [
             [
                 "0fef79229c570c5b"
@@ -174,7 +174,7 @@
         "haserroroutput": false,
         "outputs": 1,
         "x": 800,
-        "y": 240,
+        "y": 260,
         "wires": [
             []
         ]
@@ -184,7 +184,7 @@
         "type": "function",
         "z": "17bc7aeebae10c16",
         "name": "Threshold evaluation",
-        "func": "const thresholds = global.get(\"thresholds\", \"file\") || {\n    pm2_5: 50,\n    pm10: 70,\n    co2: 1000,\n    no2: 50,\n    temperature: 35,\n    humidity: 70,\n    power_consumption: 1.5\n};\n\nlet payload = msg.payload; \nlet alertsByCity = {};\nlet alertSummary = {};\n\n// Process each sensor entry\npayload.forEach(sensorData => {\n    const { measurement, fields, tags, timestamp } = sensorData;\n\n    if (fields.value > thresholds[measurement]) {\n        const city = tags.city;\n        const severity = (fields.value > thresholds[measurement] * 1.25) ? \"Critical\" : \"Warning\";\n\n        if (!alertsByCity[city]) {\n            alertsByCity[city] = [];\n            alertSummary[city] = { Critical: 0, Warning: 0 };\n        }\n\n        alertsByCity[city].push({\n            sensor: tags.sensor_id,\n            condition: `${measurement} exceeds threshold: ${fields.value} (Threshold: ${thresholds[measurement]})`,\n            location: `(${fields.latitude}, ${fields.longitude})`,\n            severity,\n            timestamp\n        });\n\n        alertSummary[city][severity]++;\n    }\n});\n\n// Build consolidated alert message\nif (Object.keys(alertsByCity).length > 0) {\n    let alertMessage = `🚨 Air Quality Alert Summary 🚨\\n\\n`;\n\n    for (const city in alertSummary) {\n        alertMessage += `🍀 Domain: Smart Cities\\n`;\n        alertMessage += `  - Critical: ${alertSummary[city].Critical}\\n`;\n        alertMessage += `  - Warnings: ${alertSummary[city].Warning}\\n\\n`;\n    }\n\n    alertMessage += `Detailed Alerts:\\n`;\n\n    for (const city in alertsByCity) {\n        alertsByCity[city].forEach(alert => {\n            alertMessage += `📍 City: ${city}\\n`;\n            alertMessage += `  - Sensor: ${alert.sensor}\\n`;\n            alertMessage += `  - Condition: ${alert.condition}\\n`;\n            alertMessage += `  - Severity: ${alert.severity}\\n`;\n            alertMessage += `  - Location: ${alert.location}\\n`;\n            alertMessage += `\\n`;\n        });\n    }\n\n    msg.payload = {\n        chatId: parseInt(env.get(\"NODE_RED_TELEGRAM_MONITORING_CHAT_ID\"), 10) || \"-4603413735\",\n        type: \"message\",\n        content: alertMessage.trim()\n    };\n\n    return msg;\n} else {\n    return null; // No alerts to send\n}",
+        "func": "const thresholds = global.get(\"thresholds\", \"file\") || {\n    pm2_5: 35,\n    pm10: 100,\n    co2: 1000,\n    no2: 50,\n    temperature: 45,\n    humidity: 95,\n    power_consumption: 1.5,\n};\n\n// Initialize data structures for alerts\nlet payload = msg.payload; \nlet alertsByCity = {};\nlet alertSummary = {};\n\n// Process each sensor entry\npayload.forEach(sensorData => {\n    const { fields, tags, timestamp } = sensorData;\n\n    // Check if the sensor type has a threshold defined\n    const metric = tags.sensor_type;\n    if (thresholds[metric] !== undefined && fields.value > thresholds[metric]) {\n        const city = tags.city;\n        const severity = (fields.value > thresholds[metric] * 1.25) ? \"Critical\" : \"Warning\";\n\n        // Initialize city alerts if not present\n        if (!alertsByCity[city]) {\n            alertsByCity[city] = [];\n            alertSummary[city] = { Critical: 0, Warning: 0 };\n        }\n\n        // Add alert to city-specific alerts\n        alertsByCity[city].push({\n            sensor: tags.sensor_id,\n            condition: `${metric.toUpperCase()} exceeds threshold: ${fields.value} (Threshold: ${thresholds[metric]})`,\n            severity,\n            timestamp\n        });\n\n        // Update alert summary for the city\n        alertSummary[city][severity]++;\n    }\n});\n\n// Build consolidated alert message\nif (Object.keys(alertsByCity).length > 0) {\n    let alertMessage = `🚨 Smart Cities: Air Quality Alert 🚨\\n\\n`;\n\n    // Add summary for each city\n    for (const city in alertSummary) {\n        alertMessage += `📍 City: ${city}\\n`;\n        alertMessage += `  - Critical Alerts: ${alertSummary[city].Critical}\\n`;\n        alertMessage += `  - Warnings: ${alertSummary[city].Warning}\\n\\n`;\n    }\n\n    // Add detailed alerts\n    alertMessage += `Detailed Alerts:\\n`;\n    for (const city in alertsByCity) {\n        alertsByCity[city].forEach(alert => {\n            alertMessage += `📍 City: ${city}\\n`;\n            alertMessage += `  - Sensor: ${alert.sensor}\\n`;\n            alertMessage += `  - Condition: ${alert.condition}\\n`;\n            alertMessage += `  - Severity: ${alert.severity}\\n`;\n            alertMessage += `  - Timestamp: ${new Date(alert.timestamp).toLocaleString()}\\n`;\n            alertMessage += `\\n`;\n        });\n    }\n\n    // Prepare message payload for Telegram\n    msg.payload = {\n        chatId: parseInt(env.get(\"NODE_RED_TELEGRAM_MONITORING_CHAT_ID\"), 10) || \"-4603413735\",\n        type: \"message\",\n        content: alertMessage.trim(),\n    };\n\n    return msg;\n} else {\n    return null; // No alerts to send\n}",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -192,7 +192,7 @@
         "finalize": "",
         "libs": [],
         "x": 540,
-        "y": 240,
+        "y": 260,
         "wires": [
             [
                 "08b6c15c01518af0"
@@ -208,7 +208,7 @@
         "saveDataDir": "",
         "filterCommands": false,
         "x": 170,
-        "y": 380,
+        "y": 480,
         "wires": [
             [
                 "70e16229975928be"
@@ -221,7 +221,7 @@
         "type": "function",
         "z": "17bc7aeebae10c16",
         "name": "Threshold configuration",
-        "func": "let thresholds = global.get(\"thresholds\") || {\n    pm2_5: 50,          // µg/m³\n    pm10: 70,           // µg/m³\n    co2: 1000,          // ppm\n    no2: 50,            // µg/m³\n    temperature: 35,    // °C\n    humidity: 70,       // %\n    power_consumption: 1.5 // kW\n};\n\nconst message = msg.payload.content;\nconst chatId = msg.payload.chatId;\n\n// Helper function to get units for each metric\nfunction getUnit(metric) {\n    const units = {\n        pm2_5: \"µg/m³\",\n        pm10: \"µg/m³\",\n        co2: \"ppm\",\n        no2: \"µg/m³\",\n        temperature: \"°C\",\n        humidity: \"%\",\n        power_consumption: \"kW\"\n    };\n    return units[metric] || \"\";\n}\n\n// Prepare the available commands message\nconst availableCommands = `\nℹ️ *Available Commands:*\n1️⃣ /get_thresholds - View current thresholds.\n2️⃣ /set_threshold <metric> <value> - Update a threshold (e.g., /set_threshold pm2_5 45).\n`;\n\n// Handle /get_thresholds command\nif (message === \"/get_thresholds\") {\n    msg.payload = {\n        chatId: chatId,\n        type: \"message\",\n        content: `📊 *Current Thresholds:*\\n\\n${Object.entries(thresholds)\n            .map(([key, value]) => `*${key}:* ${value} ${getUnit(key)}`)\n            .join(\"\\n\")}`\n    };\n    return msg;\n}\n\n// Handle /set_threshold command\nif (message.startsWith(\"/set_threshold\")) {\n    const parts = message.split(\" \");\n    if (parts.length === 3) {\n        const metric = parts[1];\n        const value = parseFloat(parts[2]);\n\n        if (thresholds.hasOwnProperty(metric)) {\n            thresholds[metric] = value; // Update the threshold\n            global.set(\"thresholds\", thresholds); // Persist the updated thresholds\n            node.warn(\"Updated thresholds: \" + JSON.stringify(thresholds)); // Debug log\n\n            msg.payload = {\n                chatId: chatId,\n                type: \"message\",\n                content: `✅ Threshold for ${metric.toUpperCase()} set to ${value} ${getUnit(metric)}`\n            };\n            return msg;\n        } else {\n            msg.payload = {\n                chatId: chatId,\n                type: \"message\",\n                content: `❌ Invalid metric. Available metrics: ${Object.keys(thresholds).join(\", \")}`\n            };\n            return msg;\n        }\n    } else {\n        msg.payload = {\n            chatId: chatId,\n            type: \"message\",\n            content: `❌ Invalid command format. Use: /set_threshold <metric> <value>\\n\\n${availableCommands}`\n        };\n        return msg;\n    }\n}\n\n// Fallback message for unrelated or unrecognized commands\nmsg.payload = {\n    chatId: chatId,\n    type: \"message\",\n    content: `❓ Unrecognized command or message. Please use one of the following commands:\\n${availableCommands}`\n};\n\nreturn msg;",
+        "func": "// Fetch existing thresholds or use default ones\nlet thresholds = global.get(\"thresholds\") || {\n    pm2_5: 35,\n    pm10: 100,\n    co2: 1000,\n    no2: 50,\n    temperature: 45,\n    humidity: 95,\n    power_consumption: 1.5,\n};\n\nconst message = msg.payload.content;\nconst chatId = msg.payload.chatId;\n\n// Helper function to get units for each metric\nfunction getUnit(metric) {\n    const units = {\n        pm2_5: \"µg/m³\",\n        pm10: \"µg/m³\",\n        co2: \"ppm\",\n        no2: \"µg/m³\",\n        temperature: \"°C\",\n        humidity: \"%\",\n        power_consumption: \"kW\"\n    };\n    return units[metric] || \"\";\n}\n\n// Available commands template\nconst availableCommands = `\nℹ️ *Available Commands:*\n1️⃣ /get_thresholds - View current thresholds.\n2️⃣ /set_threshold <metric> <value> - Update a threshold (e.g., /set_threshold pm2_5 45).\n`;\n\n// Handle /get_thresholds command\nif (message === \"/get_thresholds\") {\n    msg.payload = {\n        chatId: chatId,\n        type: \"message\",\n        content: `📊 *Current Thresholds:*\\n\\n${Object.entries(thresholds)\n            .map(([key, value]) => `*${key}:* ${value} ${getUnit(key)}`)\n            .join(\"\\n\")}`\n    };\n    return msg;\n}\n\n// Handle /set_threshold command\nif (message.startsWith(\"/set_threshold\")) {\n    const parts = message.split(\" \");\n    if (parts.length === 3) {\n        const metric = parts[1].toLowerCase(); // Metric in lowercase\n        const value = parseFloat(parts[2]); // Parse the new threshold value\n\n        if (thresholds.hasOwnProperty(metric)) {\n            if (isNaN(value) || value <= 0) {\n                msg.payload = {\n                    chatId: chatId,\n                    type: \"message\",\n                    content: `❌ Invalid value. Please provide a positive number for the threshold.`\n                };\n                return msg;\n            }\n\n            // Update the threshold value\n            thresholds[metric] = value;\n            global.set(\"thresholds\", thresholds); // Persist updated thresholds\n\n            msg.payload = {\n                chatId: chatId,\n                type: \"message\",\n                content: `✅ Threshold for *${metric.toUpperCase()}* updated to ${value} ${getUnit(metric)}.`\n            };\n            return msg;\n        } else {\n            msg.payload = {\n                chatId: chatId,\n                type: \"message\",\n                content: `❌ Invalid metric. Available metrics: ${Object.keys(thresholds).join(\", \")}`\n            };\n            return msg;\n        }\n    } else {\n        msg.payload = {\n            chatId: chatId,\n            type: \"message\",\n            content: `❌ Invalid command format. Use: /set_threshold <metric> <value>\\n\\n${availableCommands}`\n        };\n        return msg;\n    }\n}\n\n// Handle unrecognized commands\nmsg.payload = {\n    chatId: chatId,\n    type: \"message\",\n    content: `❓ Unrecognized command or message. Please use one of the following commands:\\n${availableCommands}`\n};\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -229,7 +229,7 @@
         "finalize": "",
         "libs": [],
         "x": 470,
-        "y": 380,
+        "y": 480,
         "wires": [
             [
                 "bd7a7e42b72cef62"
@@ -250,7 +250,7 @@
         "statusVal": "",
         "statusType": "auto",
         "x": 480,
-        "y": 440,
+        "y": 540,
         "wires": []
     },
     {
@@ -262,7 +262,7 @@
         "haserroroutput": false,
         "outputs": 1,
         "x": 760,
-        "y": 380,
+        "y": 480,
         "wires": [
             []
         ]
@@ -289,7 +289,7 @@
         "reduceInitType": "",
         "reduceFixup": "",
         "x": 540,
-        "y": 140,
+        "y": 160,
         "wires": [
             [
                 "9e895c89bb808370",
@@ -311,7 +311,95 @@
         "org": "my_org",
         "bucket": "air_quality",
         "x": 810,
-        "y": 140,
+        "y": 160,
         "wires": []
+    },
+    {
+        "id": "4",
+        "type": "catch",
+        "z": "17bc7aeebae10c16",
+        "name": "Catch Errors",
+        "scope": [
+            "08b6c15c01518af0"
+        ],
+        "uncaught": false,
+        "x": 130,
+        "y": 360,
+        "wires": [
+            [
+                "5"
+            ]
+        ]
+    },
+    {
+        "id": "5",
+        "type": "switch",
+        "z": "17bc7aeebae10c16",
+        "name": "Check Error Type",
+        "property": "error.message",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "regex",
+                "v": "429 Too Many Requests",
+                "vt": "str",
+                "case": false
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 330,
+        "y": 360,
+        "wires": [
+            [
+                "6"
+            ]
+        ]
+    },
+    {
+        "id": "6",
+        "type": "function",
+        "z": "17bc7aeebae10c16",
+        "name": "Extract Retry After",
+        "func": "const match = msg.error.message.match(/retry after (\\d+)/);\nif (match) {\n    msg.retryAfter = parseInt(match[1], 10) * 1000; // Convert to milliseconds\n} else {\n    msg.retryAfter = 10000; // Default retry time (10 seconds)\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 550,
+        "y": 360,
+        "wires": [
+            [
+                "7"
+            ]
+        ]
+    },
+    {
+        "id": "7",
+        "type": "delay",
+        "z": "17bc7aeebae10c16",
+        "name": "Wait Retry Time",
+        "pauseType": "delay",
+        "timeout": "10",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "0",
+        "randomLast": "0",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 780,
+        "y": 360,
+        "wires": [
+            [
+                "08b6c15c01518af0"
+            ]
+        ]
     }
 ]
